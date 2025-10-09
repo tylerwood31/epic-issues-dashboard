@@ -7,7 +7,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://epic-issues-backend.onrender.com/:path*"
+      "destination": "https://epic-issues-dashboard.onrender.com/:path*"
     }
   ]
 }
