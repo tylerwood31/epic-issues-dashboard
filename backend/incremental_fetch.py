@@ -23,9 +23,8 @@ class IncrementalFetcher:
         self.jira_token = os.getenv('JIRA_API_TOKEN')
         self.team_id = os.getenv('JIRA_TEAM_ID')
 
-        # Initialize database
-        db_path = os.getenv('DATABASE_PATH', './issues.db')
-        self.db = Database(db_path)
+        # Initialize database (will use DATABASE_URL if set, otherwise SQLite)
+        self.db = Database()
 
     def get_last_issue_date(self):
         """Get the most recent issue date from database"""
