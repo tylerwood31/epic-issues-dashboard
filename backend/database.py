@@ -164,6 +164,85 @@ class Database:
 
         return category_details
 
+    def get_weekly_trends(self):
+        """Get week-over-week trends for total issues and by category"""
+        from sqlalchemy import func
+        from datetime import datetime, timedelta
+
+        # Get current date and calculate week boundaries
+        now = datetime.utcnow()
+
+        # Define week boundaries (last 8 weeks for good visualization)
+        weeks = []
+        for i in range(8):
+            week_end = now - timedelta(days=i*7)
+            week_start = week_end - timedelta(days=7)
+            weeks.append({
+                'start': week_start,
+                'end': week_end,
+                'label': week_start.strftime('%m/%d')
+            })
+
+        weeks.reverse()  # Oldest first
+
+        # Get total issues per week
+        total_trend = []
+        for week in weeks:
+            count = self.session.query(func.count(Issue.issue_key)).filter(
+                Issue.created_date >= week['start'],
+                Issue.created_date < week['end']
+            ).scalar()
+            total_trend.append({
+                'week': week['label'],
+                'count': count or 0
+            })
+
+        # Calculate % change for total
+        for i in range(1, len(total_trend)):
+            prev_count = total_trend[i-1]['count']
+            curr_count = total_trend[i]['count']
+            if prev_count > 0:
+                change = ((curr_count - prev_count) / prev_count) * 100
+            else:
+                change = 100 if curr_count > 0 else 0
+            total_trend[i]['change'] = round(change, 1)
+        total_trend[0]['change'] = 0
+
+        # Get category trends
+        category_trends = {}
+        categories = [r.category for r in self.session.query(Issue.category).distinct()]
+
+        for category in categories:
+            category_data = []
+            for week in weeks:
+                count = self.session.query(func.count(Issue.issue_key)).filter(
+                    Issue.category == category,
+                    Issue.created_date >= week['start'],
+                    Issue.created_date < week['end']
+                ).scalar()
+                category_data.append({
+                    'week': week['label'],
+                    'count': count or 0
+                })
+
+            # Calculate % change for category
+            for i in range(1, len(category_data)):
+                prev_count = category_data[i-1]['count']
+                curr_count = category_data[i]['count']
+                if prev_count > 0:
+                    change = ((curr_count - prev_count) / prev_count) * 100
+                else:
+                    change = 100 if curr_count > 0 else 0
+                category_data[i]['change'] = round(change, 1)
+            category_data[0]['change'] = 0
+
+            category_trends[category] = category_data
+
+        return {
+            'total': total_trend,
+            'by_category': category_trends
+        }
+
     def close(self):
         """Close database session"""
         self.session.close()

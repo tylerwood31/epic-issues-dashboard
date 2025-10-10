@@ -209,6 +209,22 @@ async def get_all_issues():
         }
 
 
+@app.get("/trends")
+async def get_weekly_trends():
+    """Get week-over-week trend data"""
+    try:
+        trends = jira_client.db.get_weekly_trends()
+        return {
+            "success": True,
+            "data": trends
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""

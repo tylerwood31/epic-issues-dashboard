@@ -481,3 +481,115 @@
     width: 100%;
   }
 }
+
+/* Weekly Trends */
+.trends-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.trend-section {
+  width: 100%;
+}
+
+.trend-section h3 {
+  font-size: 1.125rem;
+  color: #1e293b;
+  margin-bottom: 1rem;
+}
+
+.custom-tooltip {
+  background: white;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.custom-tooltip p {
+  margin: 0.25rem 0;
+  font-size: 0.875rem;
+}
+
+.custom-tooltip .positive {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.custom-tooltip .negative {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.category-trends-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.trend-card {
+  background: #f8fafc;
+  padding: 1.25rem;
+  border-radius: 10px;
+  text-align: center;
+  border: 2px solid #e2e8f0;
+  transition: all 0.3s;
+}
+
+.trend-card:hover {
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2);
+}
+
+.trend-card h4 {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.trend-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.trend-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 0.5rem;
+}
+
+.trend-change {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  display: inline-block;
+}
+
+.trend-change.positive {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.trend-change.negative {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+@media (max-width: 1200px) {
+  .category-trends-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .category-trends-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [allIssues, setAllIssues] = useState([]);
+  const [trendsData, setTrendsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -17,9 +18,10 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     const API_URL = process.env.REACT_APP_API_URL || '';
     try {
-      const [dashboardResponse, issuesResponse] = await Promise.all([
+      const [dashboardResponse, issuesResponse, trendsResponse] = await Promise.all([
         axios.get(`${API_URL}/dashboard`),
-        axios.get(`${API_URL}/issues`)
+        axios.get(`${API_URL}/issues`),
+        axios.get(`${API_URL}/trends`)
       ]);
 
       if (dashboardResponse.data.success) {
@@ -41,6 +43,10 @@ const Dashboard = () => {
 
       if (issuesResponse.data.success) {
         setAllIssues(issuesResponse.data.data);
+      }
+
+      if (trendsResponse.data.success) {
+        setTrendsData(trendsResponse.data.data);
       }
 
       setLoading(false);
@@ -266,6 +272,93 @@ const Dashboard = () => {
             ))}
           </div>
         </div>
+
+        {/* Weekly Trends */}
+        {trendsData && trendsData.total && (
+          <div className="chart-card full-width">
+            <h2>Weekly Issue Trends</h2>
+            <div className="trends-container">
+              {/* Total Trend */}
+              <div className="trend-section">
+                <h3>Total Issues Created Per Week</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={trendsData.total}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="week" />
+                    <YAxis />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="custom-tooltip">
+                              <p><strong>Week: {data.week}</strong></p>
+                              <p>Issues: {data.count}</p>
+                              {data.change !== undefined && (
+                                <p className={data.change >= 0 ? 'positive' : 'negative'}>
+                                  Change: {data.change > 0 ? '+' : ''}{data.change}%
+                                </p>
+                              )}
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Legend />
+                    <Line type="monotone" dataKey="count" stroke="#3b82f6" strokeWidth={2} name="Issues Created" dot={{ r: 4 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Category Trends */}
+              <div className="trend-section">
+                <h3>Issues by Category (Weekly)</h3>
+                <ResponsiveContainer width="100%" height={400}>
+                  <LineChart data={trendsData.total}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="week" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    {Object.keys(trendsData.by_category).map((category, index) => (
+                      <Line
+                        key={category}
+                        type="monotone"
+                        dataKey="count"
+                        data={trendsData.by_category[category]}
+                        stroke={COLORS[index % COLORS.length]}
+                        strokeWidth={2}
+                        name={category}
+                        dot={{ r: 3 }}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Category Trend Cards with % Change */}
+              <div className="category-trends-grid">
+                {Object.entries(trendsData.by_category).map(([category, data]) => {
+                  const latestWeek = data[data.length - 1];
+                  const previousWeek = data[data.length - 2];
+                  return (
+                    <div key={category} className="trend-card">
+                      <h4>{category}</h4>
+                      <div className="trend-value">{latestWeek.count}</div>
+                      <div className="trend-label">This Week</div>
+                      {latestWeek.change !== undefined && (
+                        <div className={`trend-change ${latestWeek.change >= 0 ? 'positive' : 'negative'}`}>
+                          {latestWeek.change > 0 ? '▲' : '▼'} {Math.abs(latestWeek.change)}%
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* All Issues Table */}
         <div className="chart-card full-width">
