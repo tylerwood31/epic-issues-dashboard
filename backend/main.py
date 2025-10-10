@@ -262,6 +262,30 @@ async def health_check():
     }
 
 
+@app.get("/scheduler/status")
+async def scheduler_status():
+    """Get scheduler status and next run time"""
+    jobs = scheduler.get_jobs()
+    job_info = []
+
+    for job in jobs:
+        next_run = job.next_run_time
+        job_info.append({
+            "id": job.id,
+            "name": job.name,
+            "next_run": next_run.isoformat() if next_run else None,
+            "trigger": str(job.trigger)
+        })
+
+    return {
+        "success": True,
+        "scheduler_running": scheduler.running,
+        "jobs": job_info,
+        "timezone": "UTC",
+        "current_time": datetime.utcnow().isoformat()
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
 
