@@ -195,8 +195,8 @@ async def get_all_issues():
             }
             for issue in issues
         ]
-        # Sort by issue key descending (newest first)
-        issues_list.sort(key=lambda x: x['issue_key'], reverse=True)
+        # Sort by issue number descending (newest first) - extract numeric part for proper sorting
+        issues_list.sort(key=lambda x: int(x['issue_key'].split('-')[1]), reverse=True)
 
         return {
             "success": True,

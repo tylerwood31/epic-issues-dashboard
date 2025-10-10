@@ -94,7 +94,7 @@ class Database:
         results = self.session.query(
             Issue.category,
             func.count(Issue.issue_key).label('count')
-        ).group_by(Issue.category).all()
+        ).group_by(Issue.category).order_by(func.count(Issue.issue_key).desc()).all()
 
         return [{'name': r.category, 'value': r.count} for r in results]
 
@@ -105,7 +105,7 @@ class Database:
         results = self.session.query(
             Issue.status,
             func.count(Issue.issue_key).label('count')
-        ).group_by(Issue.status).all()
+        ).group_by(Issue.status).order_by(func.count(Issue.issue_key).desc()).all()
 
         return [{'name': r.status, 'value': r.count} for r in results]
 
