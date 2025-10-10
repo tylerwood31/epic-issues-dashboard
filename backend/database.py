@@ -44,7 +44,20 @@ class Database:
     """Database manager class"""
 
     def __init__(self, db_path='./issues.db'):
-        self.engine = create_engine(f'sqlite:///{db_path}')
+        # Check if DATABASE_URL is set (for PostgreSQL on Render)
+        database_url = os.getenv('DATABASE_URL')
+
+        if database_url:
+            # Render uses postgres:// but SQLAlchemy needs postgresql://
+            if database_url.startswith('postgres://'):
+                database_url = database_url.replace('postgres://', 'postgresql://', 1)
+            self.engine = create_engine(database_url)
+            print(f"Using PostgreSQL database")
+        else:
+            # Fall back to SQLite for local development
+            self.engine = create_engine(f'sqlite:///{db_path}')
+            print(f"Using SQLite database: {db_path}")
+
         Base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
