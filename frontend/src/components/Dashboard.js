@@ -315,7 +315,18 @@ const Dashboard = () => {
               <div className="trend-section">
                 <h3>Issues by Category (Weekly)</h3>
                 <ResponsiveContainer width="100%" height={400}>
-                  <LineChart data={trendsData.total}>
+                  <LineChart data={(() => {
+                    // Merge all category data into a single dataset
+                    const weeks = trendsData.total.map(w => w.week);
+                    return weeks.map(week => {
+                      const weekData = { week };
+                      Object.entries(trendsData.by_category).forEach(([category, data]) => {
+                        const weekPoint = data.find(d => d.week === week);
+                        weekData[category] = weekPoint ? weekPoint.count : 0;
+                      });
+                      return weekData;
+                    });
+                  })()}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="week" />
                     <YAxis />
@@ -325,8 +336,7 @@ const Dashboard = () => {
                       <Line
                         key={category}
                         type="monotone"
-                        dataKey="count"
-                        data={trendsData.by_category[category]}
+                        dataKey={category}
                         stroke={COLORS[index % COLORS.length]}
                         strokeWidth={2}
                         name={category}
