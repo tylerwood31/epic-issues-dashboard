@@ -45,8 +45,8 @@ def main():
     total_fetched = 0
 
     while True:
-        # Build API URL
-        api_url = f"{jira_url}/rest/api/3/search"
+        # Build API URL - use /search/jql endpoint instead of /search
+        api_url = f"{jira_url}/rest/api/3/search/jql"
         params = {
             'jql': jql,
             'startAt': start_at,
