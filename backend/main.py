@@ -107,6 +107,34 @@ async def refresh_issues(background_tasks: BackgroundTasks):
     }
 
 
+@app.post("/full-reload")
+async def full_reload(background_tasks: BackgroundTasks):
+    """Trigger full reload of all issues from Jira"""
+    def do_full_reload():
+        print(f"[{datetime.now()}] Starting full reload of all issues...")
+        try:
+            # Import bulk_import_by_keys and run it
+            import subprocess
+            import sys
+            result = subprocess.run(
+                [sys.executable, "bulk_import_by_keys.py"],
+                capture_output=True,
+                text=True
+            )
+            print(f"[{datetime.now()}] Full reload complete.")
+            print(result.stdout)
+            if result.stderr:
+                print("Errors:", result.stderr)
+        except Exception as e:
+            print(f"[{datetime.now()}] Error during full reload: {str(e)}")
+
+    background_tasks.add_task(do_full_reload)
+    return {
+        "success": True,
+        "message": "Full reload started in background. This will fetch all 357 issues from Jira."
+    }
+
+
 @app.get("/categories")
 async def get_categories():
     """Get category statistics"""
