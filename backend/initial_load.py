@@ -72,46 +72,60 @@ def main():
 
             # Process and store each issue
             for issue in issues:
-                from categorizer import categorize_issue
-
-                issue_key = issue['key']
-                fields = issue['fields']
-
-                # Extract fields
-                summary = fields.get('summary', '')
-                description = fields.get('description', '') or ''
-                status = fields.get('status', {}).get('name', 'Unknown')
-                priority = fields.get('priority', {}).get('name', 'Medium')
-
-                # Parse dates
-                created = fields.get('created', '')
-                updated = fields.get('updated', '')
-
                 try:
-                    created_date = datetime.fromisoformat(created.replace('Z', '+00:00')) if created else None
-                    updated_date = datetime.fromisoformat(updated.replace('Z', '+00:00')) if updated else None
-                except:
-                    created_date = None
-                    updated_date = None
+                    from categorizer import categorize_issue
 
-                # Categorize
-                category = categorize_issue(summary, description)
+                    issue_key = issue['key']
+                    fields = issue['fields']
 
-                # Prepare issue data
-                issue_data = {
-                    'issue_key': issue_key,
-                    'summary': summary,
-                    'description': description,
-                    'status': status,
-                    'priority': priority,
-                    'category': category,
-                    'created_date': created_date,
-                    'updated_date': updated_date
-                }
+                    # Extract fields
+                    summary = fields.get('summary', '')
+                    description = fields.get('description', '') or ''
 
-                # Store in database (don't commit yet)
-                db.upsert_issue(issue_data, commit=False)
-                all_issues.append(issue_key)
+                    # Handle description object/dict from API v3
+                    if isinstance(description, dict):
+                        description = str(description)
+                    elif isinstance(description, list):
+                        description = ' '.join([str(item) for item in description])
+
+                    status = fields.get('status', {}).get('name', 'Unknown')
+                    priority = fields.get('priority', {}).get('name', 'Medium')
+
+                    # Parse dates
+                    created = fields.get('created', '')
+                    updated = fields.get('updated', '')
+
+                    try:
+                        created_date = datetime.fromisoformat(created.replace('Z', '+00:00')) if created else None
+                        updated_date = datetime.fromisoformat(updated.replace('Z', '+00:00')) if updated else None
+                    except:
+                        created_date = None
+                        updated_date = None
+
+                    # Categorize (ensure description is string)
+                    category = categorize_issue(summary, str(description))
+
+                    # Prepare issue data
+                    issue_data = {
+                        'issue_key': issue_key,
+                        'summary': summary,
+                        'description': str(description)[:5000],  # Limit length
+                        'status': status,
+                        'priority': priority,
+                        'category': category,
+                        'created_date': created_date,
+                        'updated_date': updated_date
+                    }
+
+                    # Store in database (don't commit yet)
+                    db.upsert_issue(issue_data, commit=False)
+                    all_issues.append(issue_key)
+
+                except Exception as e:
+                    print(f"  Error processing issue {issue.get('key', 'unknown')}: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
+                    continue
 
             total_fetched += len(issues)
             print(f"  Processed {total_fetched} issues so far...")
