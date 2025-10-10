@@ -44,8 +44,13 @@
   margin-top: 0.25rem;
 }
 
-.refresh-button {
-  background: #3b82f6;
+.header-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.refresh-button,
+.logout-button {
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -56,10 +61,24 @@
   transition: all 0.3s;
 }
 
+.refresh-button {
+  background: #3b82f6;
+}
+
+.logout-button {
+  background: #64748b;
+}
+
 .refresh-button:hover {
   background: #2563eb;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.logout-button:hover {
+  background: #475569;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(100, 116, 139, 0.3);
 }
 
 .refresh-button:disabled {

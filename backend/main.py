@@ -65,6 +65,23 @@ async def shutdown_event():
     scheduler.shutdown()
 
 
+@app.post("/auth/login")
+async def login(password: str):
+    """Simple password authentication"""
+    correct_password = os.getenv('DASHBOARD_PASSWORD', 'CoverWallet2025!')
+
+    if password == correct_password:
+        return {
+            "success": True,
+            "message": "Authentication successful"
+        }
+    else:
+        return {
+            "success": False,
+            "message": "Invalid password"
+        }
+
+
 @app.get("/")
 async def root():
     """API root endpoint"""

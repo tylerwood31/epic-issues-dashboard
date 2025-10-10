@@ -3,7 +3,7 @@ import { BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Cart
 import axios from 'axios';
 import './Dashboard.css';
 
-const Dashboard = () => {
+const Dashboard = ({ onLogout }) => {
   const [dashboardData, setDashboardData] = useState(null);
   const [allIssues, setAllIssues] = useState([]);
   const [trendsData, setTrendsData] = useState(null);
@@ -124,13 +124,21 @@ const Dashboard = () => {
                 <p className="last-updated">Last updated: {lastUpdated.toLocaleString()}</p>
               )}
             </div>
-            <button
-              className={`refresh-button ${refreshing ? 'refreshing' : ''}`}
-              onClick={handleRefresh}
-              disabled={refreshing}
-            >
-              {refreshing ? 'Refreshing...' : '🔄 Refresh Data'}
-            </button>
+            <div className="header-buttons">
+              <button
+                className={`refresh-button ${refreshing ? 'refreshing' : ''}`}
+                onClick={handleRefresh}
+                disabled={refreshing}
+              >
+                {refreshing ? 'Refreshing...' : '🔄 Refresh Data'}
+              </button>
+              <button
+                className="logout-button"
+                onClick={onLogout}
+              >
+                🚪 Logout
+              </button>
+            </div>
           </div>
 
           <div className="summary-cards">
