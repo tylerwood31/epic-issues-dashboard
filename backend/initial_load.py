@@ -131,8 +131,14 @@ def main():
             print(f"  Processed {total_fetched} issues so far...")
 
             # Check if we've fetched all issues
-            if total_fetched >= total or len(issues) < max_results:
-                print(f"\n[{datetime.now()}] Reached end of results.")
+            # Note: total from API may be unreliable (pagination bug), so rely on result count
+            if len(issues) < max_results:
+                print(f"\n[{datetime.now()}] Reached end of results (got {len(issues)} issues, less than {max_results}).")
+                break
+
+            # If total is reliable and we've reached it, stop
+            if total > 0 and total_fetched >= total:
+                print(f"\n[{datetime.now()}] Reached total count from API: {total}.")
                 break
 
             # Move to next batch
