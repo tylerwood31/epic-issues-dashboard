@@ -42,8 +42,9 @@ class IncrementalFetcher:
         if since_date is None:
             since_date = self.get_last_issue_date()
 
-        # Query for new issues only - using created date to get truly new issues
-        jql = f'project = "Non Tech RT issues" AND "Team[Team]" = {self.team_id} AND created >= "{since_date}" ORDER BY created DESC'
+        # Query for new issues: EPIC team OR assigned to Jerry (who manages EPIC tickets)
+        # This catches tickets even if Team field is not set but Jerry is the assignee
+        jql = f'project = "Non Tech RT issues" AND ("Team[Team]" = {self.team_id} OR assignee = "Jerry Xu") AND created >= "{since_date}" ORDER BY created DESC'
 
         print(f"Fetching new issues created since {since_date}", flush=True)
         print(f"JQL: {jql}", flush=True)
