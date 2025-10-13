@@ -73,6 +73,51 @@ const Dashboard = ({ onLogout }) => {
     }
   };
 
+  // CSV Export functionality
+  const handleExportCSV = () => {
+    if (!allIssues || allIssues.length === 0) {
+      alert('No issues to export');
+      return;
+    }
+
+    // CSV headers
+    const headers = ['Issue Key', 'Summary', 'Status', 'Category', 'Priority', 'Created Date', 'Updated Date', 'Assignee', 'Reporter'];
+
+    // Convert issues to CSV rows
+    const csvRows = [headers.join(',')];
+
+    allIssues.forEach(issue => {
+      const row = [
+        issue.issue_key || '',
+        `"${(issue.summary || '').replace(/"/g, '""')}"`, // Escape quotes in summary
+        issue.status || '',
+        issue.category || '',
+        issue.priority || '',
+        issue.created_date || '',
+        issue.updated_date || '',
+        `"${(issue.assignee || '').replace(/"/g, '""')}"`,
+        `"${(issue.reporter || '').replace(/"/g, '""')}"`
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    // Create CSV content
+    const csvContent = csvRows.join('\n');
+
+    // Create download link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute('href', url);
+    link.setAttribute('download', `epic-issues-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   useEffect(() => {
     fetchDashboardData();
     // Refresh data every 5 minutes
@@ -109,6 +154,7 @@ const Dashboard = ({ onLogout }) => {
   const completedIssues = status_stats.find(s => s.name === 'Done')?.value || 0;
   const inProgressIssues = status_stats.find(s => s.name === 'In Progress')?.value || 0;
   const backlogIssues = status_stats.find(s => s.name === 'Backlog')?.value || 0;
+  const totalOpen = inProgressIssues + backlogIssues;
   const completionRate = total_issues > 0 ? ((completedIssues / total_issues) * 100).toFixed(0) : 0;
 
   return (
@@ -133,6 +179,12 @@ const Dashboard = ({ onLogout }) => {
                 {refreshing ? 'Refreshing...' : '🔄 Refresh Data'}
               </button>
               <button
+                className="export-button"
+                onClick={handleExportCSV}
+              >
+                📊 Export CSV
+              </button>
+              <button
                 className="logout-button"
                 onClick={onLogout}
               >
@@ -149,6 +201,10 @@ const Dashboard = ({ onLogout }) => {
             <div className="summary-card green">
               <div className="card-value">{completedIssues}</div>
               <div className="card-label">Completed ({completionRate}%)</div>
+            </div>
+            <div className="summary-card red">
+              <div className="card-value">{totalOpen}</div>
+              <div className="card-label">Total Open</div>
             </div>
             <div className="summary-card orange">
               <div className="card-value">{inProgressIssues}</div>

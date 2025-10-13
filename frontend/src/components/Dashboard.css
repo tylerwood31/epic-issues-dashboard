@@ -50,6 +50,7 @@
 }
 
 .refresh-button,
+.export-button,
 .logout-button {
   color: white;
   border: none;
@@ -65,6 +66,10 @@
   background: #3b82f6;
 }
 
+.export-button {
+  background: #10b981;
+}
+
 .logout-button {
   background: #64748b;
 }
@@ -73,6 +78,12 @@
   background: #2563eb;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+}
+
+.export-button:hover {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
 }
 
 .logout-button:hover {
@@ -99,7 +110,7 @@
 /* Summary Cards */
 .summary-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
 }
 
@@ -111,6 +122,7 @@
 
 .summary-card.blue { background: #eff6ff; }
 .summary-card.green { background: #f0fdf4; }
+.summary-card.red { background: #fee2e2; }
 .summary-card.orange { background: #fff7ed; }
 .summary-card.purple { background: #faf5ff; }
 
@@ -122,6 +134,7 @@
 
 .summary-card.blue .card-value { color: #3b82f6; }
 .summary-card.green .card-value { color: #10b981; }
+.summary-card.red .card-value { color: #dc2626; }
 .summary-card.orange .card-value { color: #f59e0b; }
 .summary-card.purple .card-value { color: #8b5cf6; }
 
@@ -482,7 +495,10 @@
     padding: 1rem;
   }
 
-  .summary-cards,
+  .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .priority-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -496,7 +512,14 @@
     gap: 1rem;
   }
 
-  .refresh-button {
+  .header-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .refresh-button,
+  .export-button,
+  .logout-button {
     width: 100%;
   }
 }
