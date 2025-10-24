@@ -58,9 +58,8 @@ class JiraClient:
         max_results = 50  # Smaller batches for faster incremental processing
         total_fetched = 0
         stored_count = 0
-        safety_limit = 150  # Stop after 150 issues for testing
 
-        while total_fetched < safety_limit:
+        while True:  # Fetch all issues (no limit)
             url = f"{self.jira_url}/rest/api/3/search/jql"
 
             params = {
