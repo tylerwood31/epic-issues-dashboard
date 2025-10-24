@@ -25,9 +25,18 @@ def main():
     jira_url = os.getenv('JIRA_URL')
     jira_email = os.getenv('JIRA_EMAIL')
     jira_token = os.getenv('JIRA_API_TOKEN')
-    team_id = os.getenv('JIRA_TEAM_ID')
+    old_team_id = os.getenv('JIRA_OLD_TEAM_ID', '3516f16e-7578-4940-9443-0a02386ad88c')
+    new_team_id = os.getenv('JIRA_NEW_TEAM_ID', '600c992b-5b41-41e6-989c-08b6aeb6d48d')
 
-    jql = f'(project = "Non Tech RT issues" OR project = "Tech incidents report") AND "Team[Team]" = {team_id} ORDER BY created DESC'
+    # Query includes both old and new team IDs, plus unassigned team tickets for specific assignees
+    jql = f'''(project = "Non Tech RT issues" OR project = "Tech incidents report") AND (
+        "Team[Team]" = {old_team_id}
+        OR "Team[Team]" = {new_team_id}
+        OR (
+            "Team[Team]" is EMPTY
+            AND assignee in ("Jerry D Smith", "Jennifer Entinger", "Cassandra Fico")
+        )
+    ) ORDER BY created DESC'''
 
     print(f"JQL Query: {jql}")
     print("=" * 60)

@@ -21,7 +21,8 @@ class IncrementalFetcher:
         self.jira_url = os.getenv('JIRA_URL')
         self.jira_email = os.getenv('JIRA_EMAIL')
         self.jira_token = os.getenv('JIRA_API_TOKEN')
-        self.team_id = os.getenv('JIRA_TEAM_ID')
+        self.old_team_id = os.getenv('JIRA_OLD_TEAM_ID', '3516f16e-7578-4940-9443-0a02386ad88c')
+        self.new_team_id = os.getenv('JIRA_NEW_TEAM_ID', '600c992b-5b41-41e6-989c-08b6aeb6d48d')
 
         # Initialize database (will use DATABASE_URL if set, otherwise SQLite)
         self.db = Database()
@@ -42,9 +43,15 @@ class IncrementalFetcher:
         if since_date is None:
             since_date = self.get_last_issue_date()
 
-        # Query for new issues: EPIC team OR assigned to Jerry (who manages EPIC tickets)
-        # This catches tickets even if Team field is not set but Jerry is the assignee
-        jql = f'project = "Non Tech RT issues" AND ("Team[Team]" = {self.team_id} OR assignee = "Jerry Xu") AND created >= "{since_date}" ORDER BY created DESC'
+        # Query includes both old and new team IDs, plus unassigned team tickets for specific assignees
+        jql = f'''(project = "Non Tech RT issues" OR project = "Tech incidents report") AND (
+            "Team[Team]" = {self.old_team_id}
+            OR "Team[Team]" = {self.new_team_id}
+            OR (
+                "Team[Team]" is EMPTY
+                AND assignee in ("Jerry D Smith", "Jennifer Entinger", "Cassandra Fico")
+            )
+        ) AND created >= "{since_date}" ORDER BY created DESC'''
 
         print(f"Fetching new issues created since {since_date}", flush=True)
         print(f"JQL: {jql}", flush=True)

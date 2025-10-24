@@ -18,7 +18,8 @@ class JiraClient:
         self.jira_url = os.getenv('JIRA_URL')
         self.jira_email = os.getenv('JIRA_EMAIL')
         self.jira_token = os.getenv('JIRA_API_TOKEN')
-        self.team_id = os.getenv('JIRA_TEAM_ID')
+        self.old_team_id = os.getenv('JIRA_OLD_TEAM_ID', '3516f16e-7578-4940-9443-0a02386ad88c')
+        self.new_team_id = os.getenv('JIRA_NEW_TEAM_ID', '600c992b-5b41-41e6-989c-08b6aeb6d48d')
 
         # Initialize Jira connection (use API v3)
         self.jira = JIRA(
@@ -33,8 +34,15 @@ class JiraClient:
 
     def build_jql_query(self):
         """Build the JQL query for fetching issues"""
-        # Query without date filter to get all issues
-        return f'(project = "Non Tech RT issues" OR project = "Tech incidents report") AND "Team[Team]" = {self.team_id} ORDER BY created DESC'
+        # Query includes both old and new team IDs, plus unassigned team tickets for specific assignees
+        return f'''(project = "Non Tech RT issues" OR project = "Tech incidents report") AND (
+            "Team[Team]" = {self.old_team_id}
+            OR "Team[Team]" = {self.new_team_id}
+            OR (
+                "Team[Team]" is EMPTY
+                AND assignee in ("Jerry D Smith", "Jennifer Entinger", "Cassandra Fico")
+            )
+        ) ORDER BY created DESC'''
 
     def fetch_and_store_issues(self):
         """Fetch issues from Jira and store in database - process batches incrementally"""
