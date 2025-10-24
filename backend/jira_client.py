@@ -111,8 +111,8 @@ class JiraClient:
                         elif isinstance(description, list):
                             description = ' '.join([str(item) for item in description])
 
-                        # Categorize
-                        category = categorize_issue(summary, description)
+                        # Categorize (returns tuple of category and confidence)
+                        category, confidence = categorize_issue(summary, description)
 
                         # Parse dates
                         created = issue_data['fields'].get('created')
@@ -126,6 +126,7 @@ class JiraClient:
                             'status': issue_data['fields'].get('status', {}).get('name', 'Unknown'),
                             'priority': issue_data['fields'].get('priority', {}).get('name', 'None'),
                             'category': category,
+                            'confidence': confidence,
                             'created_date': datetime.strptime(created, '%Y-%m-%dT%H:%M:%S.%f%z') if created else None,
                             'updated_date': datetime.strptime(updated, '%Y-%m-%dT%H:%M:%S.%f%z') if updated else None,
                             'assignee': issue_data['fields'].get('assignee', {}).get('displayName', 'Unassigned') if issue_data['fields'].get('assignee') else 'Unassigned',
