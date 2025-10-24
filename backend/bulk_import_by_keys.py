@@ -130,8 +130,8 @@ def main():
                 created_date = None
                 updated_date = None
 
-            # Categorize
-            category = categorize_issue(summary, str(description))
+            # Categorize (returns tuple of category and confidence)
+            category, confidence = categorize_issue(summary, str(description))
 
             # Store
             db.upsert_issue({
@@ -141,6 +141,7 @@ def main():
                 'status': status,
                 'priority': priority,
                 'category': category,
+                'confidence': confidence,
                 'created_date': created_date,
                 'updated_date': updated_date
             }, commit=True)

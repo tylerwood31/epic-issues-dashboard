@@ -58,6 +58,7 @@ class JiraClient:
         max_results = 50  # Smaller batches for faster incremental processing
         total_fetched = 0
         stored_count = 0
+        seen_issue_keys = set()  # Track seen issues to detect infinite loops
 
         while True:  # Fetch all issues (no limit)
             url = f"{self.jira_url}/rest/api/3/search/jql"
@@ -91,12 +92,23 @@ class JiraClient:
 
                 print(f"Batch: got {len(batch_issues)} issues, isLast={is_last}, total={total_available}", flush=True)
 
-                if not batch_issues:
+                # If we got no issues OR less than max_results, we're done
+                if not batch_issues or len(batch_issues) < max_results:
+                    if batch_issues:
+                        print(f"Got {len(batch_issues)} issues (less than {max_results}), assuming end of results", flush=True)
                     break
 
                 # Process and store each issue (batch commits after full batch)
                 issue_keys = [issue_data.get('key') for issue_data in batch_issues]
                 print(f"Issue keys in batch: {issue_keys[:5]}...", flush=True)
+
+                # Check for duplicate issues (infinite loop detection)
+                new_keys = set(issue_keys) - seen_issue_keys
+                if not new_keys:
+                    print(f"⚠️  All {len(issue_keys)} issues in this batch were already seen! Breaking to avoid infinite loop.", flush=True)
+                    break
+                seen_issue_keys.update(issue_keys)
+                print(f"New unique issues in this batch: {len(new_keys)}", flush=True)
 
                 for issue_data in batch_issues:
                     try:
