@@ -1,7 +1,7 @@
 """
 FastAPI backend for EPIC Issues Dashboard
 """
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from jira_client import JiraClient
 from incremental_fetch import IncrementalFetcher
 from datetime import timedelta
+from pydantic import BaseModel
 
 load_dotenv()
 
@@ -234,6 +235,7 @@ async def get_all_issues():
                 "summary": issue.summary,
                 "status": issue.status,
                 "category": issue.category,
+                "confidence": issue.confidence if hasattr(issue, 'confidence') else 0.0,
                 "priority": issue.priority,
                 "created_date": issue.created_date.isoformat() if issue.created_date else None,
                 "updated_date": issue.updated_date.isoformat() if issue.updated_date else None
@@ -301,6 +303,61 @@ async def scheduler_status():
         "timezone": "UTC",
         "current_time": datetime.utcnow().isoformat()
     }
+
+
+# Pydantic model for category update
+class CategoryUpdate(BaseModel):
+    category: str
+
+
+@app.patch("/issues/{issue_key}")
+async def update_issue_category(issue_key: str, update: CategoryUpdate):
+    """Update the category of an issue"""
+    try:
+        from database import Issue
+
+        # Get the issue
+        issue = jira_client.db.session.query(Issue).filter_by(issue_key=issue_key).first()
+
+        if not issue:
+            raise HTTPException(status_code=404, detail=f"Issue {issue_key} not found")
+
+        # Valid categories
+        valid_categories = [
+            'Missing SSR',
+            'Missing Policy Header',
+            'Missing Policy',
+            'Account/Client Missing',
+            'Producer Updates',
+            'Endorsement Issues',
+            'Premium/Data Entry Issues',
+            'Account Cleanup/Removal'
+        ]
+
+        if update.category not in valid_categories:
+            raise HTTPException(status_code=400, detail=f"Invalid category. Must be one of: {', '.join(valid_categories)}")
+
+        # Update category and set confidence to 100 (manual override)
+        issue.category = update.category
+        issue.confidence = 100.0
+        jira_client.db.commit()
+
+        return {
+            "success": True,
+            "message": f"Updated category for {issue_key}",
+            "data": {
+                "issue_key": issue.issue_key,
+                "category": issue.category,
+                "confidence": issue.confidence
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 
 if __name__ == "__main__":

@@ -20,6 +20,7 @@ class Issue(Base):
     status = Column(String)
     priority = Column(String)
     category = Column(String)
+    confidence = Column(Float, default=0.0)  # Confidence score 0-100
     created_date = Column(DateTime)
     updated_date = Column(DateTime)
     assignee = Column(String)
@@ -185,15 +186,25 @@ class Database:
         # Get current date and calculate week boundaries
         now = datetime.utcnow()
 
+        # Find the most recent Monday (or today if it's Monday)
+        days_since_monday = now.weekday()  # Monday is 0, Sunday is 6
+        current_week_start = now - timedelta(days=days_since_monday)
+        # Set to start of day
+        current_week_start = current_week_start.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # Current week end is next Monday (7 days from start)
+        current_week_end = current_week_start + timedelta(days=7)
+
         # Define week boundaries (last 8 weeks for good visualization)
         weeks = []
         for i in range(8):
-            week_end = now - timedelta(days=i*7)
-            week_start = week_end - timedelta(days=7)
+            week_start = current_week_start - timedelta(days=i*7)
+            week_end = week_start + timedelta(days=7)
             weeks.append({
                 'start': week_start,
                 'end': week_end,
-                'label': week_start.strftime('%m/%d')
+                'label': week_start.strftime('%m/%d'),
+                'is_current': i == 0  # Mark current week
             })
 
         weeks.reverse()  # Oldest first
@@ -201,13 +212,17 @@ class Database:
         # Get total issues per week
         total_trend = []
         for week in weeks:
+            # For current week, only count up to now
+            end_date = min(week['end'], now) if week.get('is_current') else week['end']
+
             count = self.session.query(func.count(Issue.issue_key)).filter(
                 Issue.created_date >= week['start'],
-                Issue.created_date < week['end']
+                Issue.created_date < end_date
             ).scalar()
             total_trend.append({
                 'week': week['label'],
-                'count': count or 0
+                'count': count or 0,
+                'is_current': week.get('is_current', False)
             })
 
         # Calculate % change for total
@@ -228,14 +243,18 @@ class Database:
         for category in categories:
             category_data = []
             for week in weeks:
+                # For current week, only count up to now
+                end_date = min(week['end'], now) if week.get('is_current') else week['end']
+
                 count = self.session.query(func.count(Issue.issue_key)).filter(
                     Issue.category == category,
                     Issue.created_date >= week['start'],
-                    Issue.created_date < week['end']
+                    Issue.created_date < end_date
                 ).scalar()
                 category_data.append({
                     'week': week['label'],
-                    'count': count or 0
+                    'count': count or 0,
+                    'is_current': week.get('is_current', False)
                 })
 
             # Calculate % change for category

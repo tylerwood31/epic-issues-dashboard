@@ -635,3 +635,56 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Confidence Badges */
+.confidence-badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.confidence-badge-high {
+  background-color: #10b981;
+  color: white;
+}
+
+.confidence-badge-medium {
+  background-color: #f59e0b;
+  color: white;
+}
+
+.confidence-badge-low {
+  background-color: #ef4444;
+  color: white;
+}
+
+/* Category Dropdown for Low Confidence */
+.category-dropdown {
+  width: 100%;
+  padding: 0.5rem;
+  border: 2px solid #ef4444;
+  border-radius: 6px;
+  background-color: #fef2f2;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.category-dropdown:hover {
+  background-color: #fee2e2;
+  border-color: #dc2626;
+}
+
+.category-dropdown:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.category-dropdown:focus {
+  outline: none;
+  border-color: #b91c1c;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}

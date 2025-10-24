@@ -11,8 +11,20 @@ const Dashboard = ({ onLogout }) => {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [updatingIssue, setUpdatingIssue] = useState(null);
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
+
+  const CATEGORIES = [
+    'Missing SSR',
+    'Missing Policy Header',
+    'Missing Policy',
+    'Account/Client Missing',
+    'Producer Updates',
+    'Endorsement Issues',
+    'Premium/Data Entry Issues',
+    'Account Cleanup/Removal'
+  ];
 
   // Fetch dashboard data
   const fetchDashboardData = async () => {
@@ -73,6 +85,35 @@ const Dashboard = ({ onLogout }) => {
     }
   };
 
+  // Handle category update
+  const handleCategoryUpdate = async (issueKey, newCategory) => {
+    const API_URL = process.env.REACT_APP_API_URL || '';
+    setUpdatingIssue(issueKey);
+
+    try {
+      const response = await axios.patch(`${API_URL}/issues/${issueKey}`, {
+        category: newCategory
+      });
+
+      if (response.data.success) {
+        // Update local state
+        setAllIssues(prevIssues =>
+          prevIssues.map(issue =>
+            issue.issue_key === issueKey
+              ? { ...issue, category: newCategory, confidence: 100 }
+              : issue
+          )
+        );
+        // Refresh dashboard data to update charts
+        fetchDashboardData();
+      }
+    } catch (err) {
+      alert(`Failed to update category: ${err.response?.data?.error || err.message}`);
+    } finally {
+      setUpdatingIssue(null);
+    }
+  };
+
   // CSV Export functionality
   const handleExportCSV = () => {
     if (!allIssues || allIssues.length === 0) {
@@ -81,22 +122,24 @@ const Dashboard = ({ onLogout }) => {
     }
 
     // CSV headers
-    const headers = ['Issue Key', 'Summary', 'Status', 'Category', 'Priority', 'Created Date', 'Updated Date', 'Assignee', 'Reporter'];
+    const headers = ['Issue Key', 'Summary', 'Status', 'Category', 'Confidence', 'Priority', 'Created Date', 'Updated Date'];
 
     // Convert issues to CSV rows
     const csvRows = [headers.join(',')];
 
     allIssues.forEach(issue => {
+      const confidence = issue.confidence || 0;
+      const confidenceLevel = confidence >= 90 ? 'High' : confidence >= 60 ? 'Medium' : 'Low';
+
       const row = [
         issue.issue_key || '',
         `"${(issue.summary || '').replace(/"/g, '""')}"`, // Escape quotes in summary
         issue.status || '',
         issue.category || '',
+        `${confidenceLevel} (${confidence.toFixed(0)}%)`,
         issue.priority || '',
         issue.created_date || '',
-        issue.updated_date || '',
-        `"${(issue.assignee || '').replace(/"/g, '""')}"`,
-        `"${(issue.reporter || '').replace(/"/g, '""')}"`
+        issue.updated_date || ''
       ];
       csvRows.push(row.join(','));
     });
@@ -222,15 +265,43 @@ const Dashboard = ({ onLogout }) => {
           {/* Category Distribution Pie Chart */}
           <div className="chart-card">
             <h2>Issues by Category</h2>
-            <ResponsiveContainer width="100%" height={350}>
+            <ResponsiveContainer width="100%" height={420}>
               <PieChart>
                 <Pie
                   data={category_stats}
                   cx="50%"
-                  cy="50%"
-                  labelLine={true}
-                  label={({ name, percentage }) => `${name}: ${percentage}%`}
-                  outerRadius={90}
+                  cy="52%"
+                  labelLine={{ stroke: '#94a3b8', strokeWidth: 1 }}
+                  label={({ cx, cy, midAngle, outerRadius, name, percentage }) => {
+                    const RADIAN = Math.PI / 180;
+                    const radius = outerRadius + 38;
+                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+                    // Shorten long names
+                    let shortName = name;
+                    if (name.includes('Premium/Data Entry')) shortName = 'Data Entry';
+                    else if (name.includes('Missing Policy Header')) shortName = 'Policy Header';
+                    else if (name.includes('Account/Client Missing')) shortName = 'Acct Missing';
+                    else if (name.includes('Endorsement Issues')) shortName = 'Endorsement';
+                    else if (name.includes('Producer Updates')) shortName = 'Producer';
+                    else if (name.includes('Missing Policy')) shortName = 'Policy';
+                    else if (name.includes('Missing SSR')) shortName = 'SSR';
+
+                    return (
+                      <text
+                        x={x}
+                        y={y}
+                        fill="#1e293b"
+                        textAnchor={x > cx ? 'start' : 'end'}
+                        dominantBaseline="central"
+                        style={{ fontSize: '13px', fontWeight: '500' }}
+                      >
+                        {`${shortName}: ${percentage}%`}
+                      </text>
+                    );
+                  }}
+                  outerRadius={115}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -238,7 +309,7 @@ const Dashboard = ({ onLogout }) => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(value, name, props) => [value, props.payload.name]} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -246,7 +317,7 @@ const Dashboard = ({ onLogout }) => {
           {/* Status Distribution Bar Chart */}
           <div className="chart-card">
             <h2>Issues by Status</h2>
-            <ResponsiveContainer width="100%" height={350}>
+            <ResponsiveContainer width="100%" height={450}>
               <BarChart data={status_stats}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" angle={-45} textAnchor="end" height={120} interval={0} />
@@ -445,35 +516,71 @@ const Dashboard = ({ onLogout }) => {
                   <th>Summary</th>
                   <th>Status</th>
                   <th>Category</th>
+                  <th>Confidence</th>
                   <th>Priority</th>
+                  <th>Date Created</th>
                 </tr>
               </thead>
               <tbody>
-                {allIssues.map((issue) => (
-                  <tr key={issue.issue_key}>
-                    <td className="issue-key">
-                      <a
-                        href={`https://coverwallet.atlassian.net/browse/${issue.issue_key}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {issue.issue_key}
-                      </a>
-                    </td>
-                    <td className="issue-summary">{issue.summary}</td>
-                    <td>
-                      <span className={`status-badge status-${issue.status.toLowerCase().replace(/\s+/g, '-')}`}>
-                        {issue.status}
-                      </span>
-                    </td>
-                    <td className="issue-category">{issue.category}</td>
-                    <td>
-                      <span className={`priority-badge priority-${issue.priority.toLowerCase()}`}>
-                        {issue.priority}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {allIssues.map((issue) => {
+                  const confidence = issue.confidence || 0;
+                  const isLowConfidence = confidence < 60;
+                  const confidenceLevel = confidence >= 90 ? 'High' : confidence >= 60 ? 'Medium' : 'Low';
+                  const confidenceBadgeClass = confidence >= 90 ? 'confidence-badge-high' : confidence >= 60 ? 'confidence-badge-medium' : 'confidence-badge-low';
+
+                  return (
+                    <tr key={issue.issue_key}>
+                      <td className="issue-key">
+                        <a
+                          href={`https://coverwallet.atlassian.net/browse/${issue.issue_key}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {issue.issue_key}
+                        </a>
+                      </td>
+                      <td className="issue-summary">{issue.summary}</td>
+                      <td>
+                        <span className={`status-badge status-${issue.status.toLowerCase().replace(/\s+/g, '-')}`}>
+                          {issue.status}
+                        </span>
+                      </td>
+                      <td className="issue-category">
+                        {isLowConfidence ? (
+                          <select
+                            value={issue.category}
+                            onChange={(e) => handleCategoryUpdate(issue.issue_key, e.target.value)}
+                            disabled={updatingIssue === issue.issue_key}
+                            className="category-dropdown"
+                          >
+                            {CATEGORIES.map(cat => (
+                              <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          issue.category
+                        )}
+                      </td>
+                      <td>
+                        <span className={`confidence-badge ${confidenceBadgeClass}`}>
+                          {confidenceLevel} ({confidence.toFixed(0)}%)
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`priority-badge priority-${issue.priority.toLowerCase()}`}>
+                          {issue.priority}
+                        </span>
+                      </td>
+                      <td>
+                        {issue.created_date ? new Date(issue.created_date).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        }) : 'N/A'}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
