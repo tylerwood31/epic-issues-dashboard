@@ -34,8 +34,8 @@ class JiraClient:
 
     def build_jql_query(self):
         """Build the JQL query for fetching issues"""
-        # Query includes both old and new team IDs, plus unassigned team tickets for specific assignees
-        return f'''(project = "Non Tech RT issues" OR project = "Tech incidents report") AND (
+        # Query only includes NTRI project (Non Tech RT issues), not EX project
+        return f'''project = "Non Tech RT issues" AND (
             "Team[Team]" = {self.old_team_id}
             OR "Team[Team]" = {self.new_team_id}
             OR (
